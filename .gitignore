@@ -1,3 +1,4 @@
 .vscode/
 VOCdevkit/
 *.tar
+*.pth
