@@ -1,3 +1,5 @@
 .vscode/
 VOCdevkit/
 *.tar
+*.pth
+.ipynb_checkpoints/
