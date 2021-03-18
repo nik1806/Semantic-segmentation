@@ -2,5 +2,5 @@
 VOCdevkit/
 *.tar
 *.pth
-.ipynb_checkpoints/
+# .ipynb_checkpoints/
 test.ipynb
