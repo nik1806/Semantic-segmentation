@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.metrics import roc_auc_score
+import torch 
 
 def dice_coefficient_custom(ground_truth, prediction, n_classes:int =21, smooth:float = 0.0001):
     """
@@ -71,7 +72,7 @@ def roc_auc_custom(ground_truth, prediction, n_classes:int =21, average:str = 'm
     else: # average
         return score/cnt
 
-def accuracy(ground_truth,prediction):
+def accuracy_custom(ground_truth,prediction):
     ground_truth = ground_truth == torch.max(ground_truth)
     corr = torch.sum(prediction == ground_truth)
     tensor_size = prediction.size(0) * prediction.size(1) * prediction.size(2) * prediction.size(3)
@@ -80,7 +81,7 @@ def accuracy(ground_truth,prediction):
     return acc
 
 
-def sensitivity(ground_truth, prediction):
+def sensitivity_custom(ground_truth, prediction):
     # Sensitivity == Recall
     ground_truth = ground_truth == torch.max(ground_truth)
 
@@ -94,7 +95,7 @@ def sensitivity(ground_truth, prediction):
     return SE
 
 
-def specificity(ground_truth,prediction):
+def specificity_custom(ground_truth,prediction):
     ground_truth = ground_truth == torch.max(ground_truth)
 
     # TN : True Negative
