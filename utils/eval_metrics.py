@@ -70,3 +70,38 @@ def roc_auc_custom(ground_truth, prediction, n_classes:int =21, average:str = 'm
         return score
     else: # average
         return score/cnt
+
+def accuracy(ground_truth,prediction):
+    ground_truth = ground_truth == torch.max(ground_truth)
+    corr = torch.sum(prediction == ground_truth)
+    tensor_size = prediction.size(0) * prediction.size(1) * prediction.size(2) * prediction.size(3)
+    acc = float(corr) / float(tensor_size)
+
+    return acc
+
+
+def sensitivity(ground_truth, prediction):
+    # Sensitivity == Recall
+    ground_truth = ground_truth == torch.max(ground_truth)
+
+    # TP : True Positive
+    # FN : False Negative
+    TP = ((prediction == 1) + (ground_truth == 1)) == 2
+    FN = ((prediction == 0) + (ground_truth == 1)) == 2
+
+    SE = float(torch.sum(TP)) / (float(torch.sum(TP + FN)) + 1e-6)
+
+    return SE
+
+
+def specificity(ground_truth,prediction):
+    ground_truth = ground_truth == torch.max(ground_truth)
+
+    # TN : True Negative
+    # FP : False Positive
+    TN = ((prediction == 0) + (ground_truth == 0)) == 2
+    FP = ((prediction == 1) + (ground_truth == 0)) == 2
+
+    SP = float(torch.sum(TN)) / (float(torch.sum(TN + FP)) + 1e-6)
+
+    return SP
