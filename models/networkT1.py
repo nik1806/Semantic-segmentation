@@ -1,15 +1,17 @@
 import torch
 from torch import nn
-from torchsummary import summary
+# from torchsummary import summary
 import torchvision
 from torchvision.models.resnet import resnet50
+
 
 # pre-trained backbone
 # resnet = torchvision.models.resnet.resnet50(pretrained=True)
 
-device = torch.device('cuda:5')
-summary(resnet.cuda(device), torch.rand((1, 3, 256, 256)).cuda(device))
-
+# +
+# device = torch.device('cuda:5')
+# summary(resnet.cuda(device), torch.rand((1, 3, 256, 256)).cuda(device))
+# -
 
 class convBN(nn.Module):
     """
@@ -100,6 +102,7 @@ class upBlock(nn.Module):
 class UNet(nn.Module):
     """
         A UNet architecture with Resnet50 backbone (pre-trained)
+        it will improve the performace and train faster with less data (advantages of transfer learning).
     """
 
     def __init__(self, n_cls=21, depth=6):
@@ -162,7 +165,6 @@ class UNet(nn.Module):
 
         # output_feature_map = x
         x = self.out(x)
-<<<<<<< HEAD
         del pre_pools # clear garbage
 
         # if with_output_feature_map:
@@ -170,30 +172,26 @@ class UNet(nn.Module):
         # else:
         return x
 
-print("INIT")
-model = UNet(n_cls=21).cuda()
-inp = torch.rand((1, 3, 128, 128)).cuda()
-print("To gpu complete")
-# out = model(inp)
-# visualization of model
-summary(model, inp)
-# print(out.shape)
-=======
-        del pre_pools
-        if with_output_feature_map:
-            return x, output_feature_map
-        else:
-            return x
+# +
+# print("INIT")
+# model = UNet(n_cls=21).cuda()
+# inp = torch.rand((1, 3, 128, 128)).cuda()
+# print("To gpu complete")
+# # out = model(inp)
+# # visualization of model
+# summary(model, inp)
+# # print(out.shape)
 
-device = torch.device('cuda:5')
+# +
+# device = torch.device('cuda:5')
 
-model = UNetWithResnet50Encoder().cuda(device)
-inp = torch.rand((1, 3, 256, 256)).cuda(device)
+# +
+# model = UNetWithResnet50Encoder().cuda(device)
+# inp = torch.rand((1, 3, 256, 256)).cuda(device)
 # out = model(inp)
+# -
 
 # visualization of model
-summary(model, inp, verbose=1)
+# summary(model, inp, verbose=1)
 # print(out.shape)
 
-
->>>>>>> e5e2f922ee9e13d6cecc255e521e9fbfb9b0e798
