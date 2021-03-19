@@ -7,6 +7,9 @@ from torchvision.models.resnet import resnet50
 # pre-trained backbone
 # resnet = torchvision.models.resnet.resnet50(pretrained=True)
 
+device = torch.device('cuda:5')
+summary(resnet.cuda(device), torch.rand((1, 3, 256, 256)).cuda(device))
+
 
 class convBN(nn.Module):
     """
@@ -159,6 +162,7 @@ class UNet(nn.Module):
 
         # output_feature_map = x
         x = self.out(x)
+<<<<<<< HEAD
         del pre_pools # clear garbage
 
         # if with_output_feature_map:
@@ -174,3 +178,22 @@ print("To gpu complete")
 # visualization of model
 summary(model, inp)
 # print(out.shape)
+=======
+        del pre_pools
+        if with_output_feature_map:
+            return x, output_feature_map
+        else:
+            return x
+
+device = torch.device('cuda:5')
+
+model = UNetWithResnet50Encoder().cuda(device)
+inp = torch.rand((1, 3, 256, 256)).cuda(device)
+# out = model(inp)
+
+# visualization of model
+summary(model, inp, verbose=1)
+# print(out.shape)
+
+
+>>>>>>> e5e2f922ee9e13d6cecc255e521e9fbfb9b0e798
