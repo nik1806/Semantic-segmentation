@@ -213,19 +213,22 @@ class R2UNet(nn.Module):
 
         self.up5 = UpConv(n_filter[4], n_filter[3], deconv=True)
         self.r2up5 = R2UNetBlock(n_filter[4], n_filter[3], t)
-        self.dropout5 = nn.Dropout(p=0.1)
+        self.dropout5 = nn.Dropout(p=0.3)
         self.up4 = UpConv(n_filter[3], n_filter[2], deconv=True)
         self.r2up4 = R2UNetBlock(n_filter[3], n_filter[2], t)
-        self.dropout4 = nn.Dropout(p=0.1)
+        self.dropout4 = nn.Dropout(p=0.3)
 
         self.up3 = UpConv(n_filter[2], n_filter[1], deconv=True)
         self.r2up3 = R2UNetBlock(n_filter[2], n_filter[1], t)
-        self.dropout3 = nn.Dropout(p=0.1)
+        self.dropout3 = nn.Dropout(p=0.2)
 
         self.up2 = UpConv(n_filter[1], n_filter[0], deconv=True)
         self.r2up2 = R2UNetBlock(n_filter[1], n_filter[0], t)
+        self.dropout2 = nn.Dropout(p=0.2)
 
         self.outconv = nn.Conv2d(64, n_classes, kernel_size=1, stride=1, padding=0)
+        
+        self._init_weight() # for better init and avoid overfitting
 
     def forward(self, x):
         x1 = self.r2down1(x)
@@ -260,6 +263,15 @@ class R2UNet(nn.Module):
         up2 = self.up2(up3, pad_like=x1)
         up2 = torch.cat((x1, up2), dim=1)
         up2 = self.r2up2(up2)
+        up2 = self.dropout2(up2)
 
         out = self.outconv(up2)
         return out
+    
+    def _init_weight(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                torch.nn.init.kaiming_normal_(m.weight)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()

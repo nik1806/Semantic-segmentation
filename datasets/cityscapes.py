@@ -84,6 +84,7 @@ class CityscapesSegmentation(data.Dataset):
     def transform_tr(self, sample):
         composed_transforms = transforms.Compose([
             tr.RandomHorizontalFlip(),
+            tr.RandomRotateB(),
             tr.RandomScaleCrop(base_size=self.base_size, crop_size=self.crop_size, fill=255),
             tr.RandomGaussianBlur(),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),

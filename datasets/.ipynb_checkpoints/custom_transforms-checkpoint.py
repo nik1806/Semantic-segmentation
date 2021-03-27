@@ -155,6 +155,21 @@ def pair_transform_val(image, target, max_cls=34):
 ###################################### Additions ### temporary
 from PIL import Image, ImageOps, ImageFilter
 
+class RandomRotateB(object):
+    def __call__(self, sample, angle=10):
+        img = sample['image']
+        mask = sample['label']
+        if random.random() < 0.5:
+            curr_angle = random.randint(-angle, angle) # angle between -10 to 10 degree
+            img = TF.rotate(img, curr_angle)
+            mask = TF.rotate(mask, curr_angle)
+#             img = img.transpose(Image.FLIP_LEFT_RIGHT)
+#             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
+
+        return {'image': img,
+                'label': mask}
+
+
 class Normalize(object):
     """Normalize a tensor image with mean and standard deviation.
     Args:

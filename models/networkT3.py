@@ -159,7 +159,6 @@ def ResNet101(output_stride, BatchNorm, pretrained=True):
     model = ResNet(Bottleneck, [3, 4, 23, 3], output_stride, BatchNorm, pretrained=pretrained)
     return model
 
-# +
 class ResNeSt(nn.Module):
     def __init__(self, arch='resnest101', pretrained=True):
         super().__init__()
@@ -183,9 +182,7 @@ class ResNeSt(nn.Module):
         x = self.bottle_layer4(x)
         
         return x, low_level_feat
-        
-        
-# -
+
 
 # ##############
 
@@ -345,9 +342,8 @@ class Decoder(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-# +
 class DeepLab(nn.Module):
-    def __init__(self, output_stride=16, num_classes=21, freeze_bn=False):
+    def __init__(self, backbone='resnest', output_stride=16, num_classes=21, freeze_bn=False):
         super(DeepLab, self).__init__()
         # if backbone == 'drn':
         #     output_stride = 8
@@ -356,10 +352,11 @@ class DeepLab(nn.Module):
         #     BatchNorm = SynchronizedBatchNorm2d
         # else:
         BatchNorm = nn.BatchNorm2d
-
-#         self.backbone = ResNet101(output_stride, BatchNorm)
         
-        self.backbone = ResNeSt()
+        if backbone == 'resnet':
+            self.backbone = ResNet101(output_stride, BatchNorm)
+        elif backbone == 'resnest':
+            self.backbone = ResNeSt()
         self.aspp = ASPP(output_stride, BatchNorm)
         self.decoder = Decoder(num_classes, BatchNorm)
 
@@ -412,9 +409,6 @@ class DeepLab(nn.Module):
     #                         if p.requires_grad:
     #                             yield p
 
-
-# -
-
 if __name__ == "__main__":
     model = DeepLab(output_stride=16, num_classes=19)
     model.eval()
@@ -428,11 +422,13 @@ if __name__ == "__main__":
 
 # +
 # model
+
+# +
+# model
+
+# +
+# from torchsummary import summary
+# summary(model, input)
 # -
-
-model
-
-from torchsummary import summary
-summary(model, input)
 
 
