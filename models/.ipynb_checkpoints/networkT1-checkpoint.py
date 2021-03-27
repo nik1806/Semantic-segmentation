@@ -119,7 +119,7 @@ class UNet(nn.Module):
         up_blocks = []
 
         # DOWNBLOCKS -> increase channels
-        self.input_block = nn.Sequential(*list(resnet.children()))[:3] # extracting layers
+        self.input_block = nn.Sequential(*list(resnet.children()))[:3] # use later in decoder
         self.input_pool = list(resnet.children())[3]
         for bottleneck in list(resnet.children()): # using bottleneck layers
             if isinstance(bottleneck, nn.Sequential):

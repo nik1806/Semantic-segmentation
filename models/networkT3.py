@@ -388,4 +388,9 @@ if __name__ == "__main__":
     output = model(input)
     print(output.size())
 
+from torchsummary import summary
+summary(model, input)
+
+model
+
 
