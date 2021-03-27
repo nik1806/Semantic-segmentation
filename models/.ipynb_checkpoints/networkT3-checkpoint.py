@@ -159,6 +159,34 @@ def ResNet101(output_stride, BatchNorm, pretrained=True):
     model = ResNet(Bottleneck, [3, 4, 23, 3], output_stride, BatchNorm, pretrained=pretrained)
     return model
 
+# +
+class ResNeSt(nn.Module):
+    def __init__(self, arch='resnest101', pretrained=True):
+        super().__init__()
+        torch.hub.list('zhanghang1989/ResNeSt', force_reload=True)
+        # load pretrained ResNeSt-101 models
+        resneSt = torch.hub.load('zhanghang1989/ResNeSt', arch, pretrained=pretrained)
+        
+        self.layer0 = nn.Sequential(*list(resneSt.children()))[:4] # extracting pre-trained layers
+        self.bottle_layer1 = nn.Sequential(*list(resneSt.children()))[4]
+        self.bottle_layer2 = nn.Sequential(*list(resneSt.children()))[5]
+        self.bottle_layer3 = nn.Sequential(*list(resneSt.children()))[6]
+        self.bottle_layer4 = nn.Sequential(*list(resneSt.children()))[7]
+        
+        
+    def forward(self, input):
+        x = self.layer0(input)
+        x = self.bottle_layer1(x)
+        low_level_feat = x
+        x = self.bottle_layer2(x)
+        x = self.bottle_layer3(x)
+        x = self.bottle_layer4(x)
+        
+        return x, low_level_feat
+        
+        
+# -
+
 # ##############
 
 class make_ASPPModule(nn.Module):
@@ -191,7 +219,7 @@ class make_ASPPModule(nn.Module):
                 m.bias.data.zero_()
 
 class ASPP(nn.Module):
-    def __init__(self, backbone, output_stride, BatchNorm, inplanes=2048):
+    def __init__(self, output_stride, BatchNorm, inplanes=2048):
         # remove batchnorm
         # checkout striders
         """
@@ -260,7 +288,7 @@ class ASPP(nn.Module):
 # ###########
 
 class Decoder(nn.Module):
-    def __init__(self, num_classes, backbone, BatchNorm, low_level_inplanes = 256):
+    def __init__(self, num_classes, BatchNorm, low_level_inplanes = 256):
         # remove batchnorm param
         # remove backbone param
         """
@@ -317,8 +345,9 @@ class Decoder(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
+# +
 class DeepLab(nn.Module):
-    def __init__(self, backbone='resnet', output_stride=16, num_classes=21, freeze_bn=False):
+    def __init__(self, output_stride=16, num_classes=21, freeze_bn=False):
         super(DeepLab, self).__init__()
         # if backbone == 'drn':
         #     output_stride = 8
@@ -328,9 +357,11 @@ class DeepLab(nn.Module):
         # else:
         BatchNorm = nn.BatchNorm2d
 
-        self.backbone = ResNet101(output_stride, BatchNorm)
-        self.aspp = ASPP(backbone, output_stride, BatchNorm)
-        self.decoder = Decoder(num_classes, backbone, BatchNorm)
+#         self.backbone = ResNet101(output_stride, BatchNorm)
+        
+        self.backbone = 
+        self.aspp = ASPP(output_stride, BatchNorm)
+        self.decoder = Decoder(num_classes, BatchNorm)
 
         # self.freeze_bn = freeze_bn
 
@@ -381,11 +412,22 @@ class DeepLab(nn.Module):
     #                         if p.requires_grad:
     #                             yield p
 
+
+# -
+
 if __name__ == "__main__":
-    model = DeepLab(backbone='resnet', output_stride=16)
+    model = DeepLab(output_stride=16, num_classes=19)
     model.eval()
     input = torch.rand(1, 3, 513, 513)
     output = model(input)
     print(output.size())
+
+# +
+# from torchsummary import summary
+# summary(model, input)
+
+# +
+# model
+# -
 
 
