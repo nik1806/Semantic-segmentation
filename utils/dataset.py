@@ -66,7 +66,7 @@ class cityscapes_train(Dataset):
 
     def __len__(self):
         return len(self.filenames)
-    
+
 class cityscapes_val(Dataset):
 
     def __init__(self, root, transform, subset='val' ):
@@ -107,6 +107,6 @@ class cityscapes_val(Dataset):
 
     def __len__(self):
         return len(self.filenames)
-    
+
     
 

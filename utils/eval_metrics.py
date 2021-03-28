@@ -1,5 +1,11 @@
+# +
 import numpy as np
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, f1_score, accuracy_score, confusion_matrix, multilabel_confusion_matrix
+
+import torch 
+
+
+# -
 
 def dice_coefficient_custom(ground_truth, prediction, n_classes:int =21, smooth:float = 0.0001):
     """
@@ -71,37 +77,62 @@ def roc_auc_custom(ground_truth, prediction, n_classes:int =21, average:str = 'm
     else: # average
         return score/cnt
 
-def accuracy(ground_truth,prediction):
+def accuracy_se_sp_custom(ground_truth,prediction):
     ground_truth = ground_truth == torch.max(ground_truth)
-    corr = torch.sum(prediction == ground_truth)
-    tensor_size = prediction.size(0) * prediction.size(1) * prediction.size(2) * prediction.size(3)
-    acc = float(corr) / float(tensor_size)
+    #corr = torch.sum(prediction == ground_truth)
+    #tensor_size = prediction.size(0) * prediction.size(1) * prediction.size(2) * prediction.size(3)
+    #acc = float(corr) / float(tensor_size)
+    ground_truth = ground_truth.flatten()
+    prediction = prediction.flatten()
+    mcm = confusion_matrix(ground_truth, prediction)
+    tn = mcm[1,1]
+    tp = mcm[0,0]
+    fn = mcm[1,0]
+    fp = mcm[0,1]
+    acc = (tp + tn)/(tp+tn+fp+fn + 1e-6)
+    SE = tp / (tp + fn + 1e-6)
+    SP = tn / (tn + fp + 1e-6)
 
-    return acc
+    #acc = float(torch.sum(TP+TN)) / (float(torch.sum(TP + TN+FP+FN)) + 1e-6)
+    return [acc, SE, SP]
 
 
-def sensitivity(ground_truth, prediction):
+def sensitivity_custom(ground_truth, prediction):
     # Sensitivity == Recall
     ground_truth = ground_truth == torch.max(ground_truth)
 
     # TP : True Positive
     # FN : False Negative
-    TP = ((prediction == 1) + (ground_truth == 1)) == 2
-    FN = ((prediction == 0) + (ground_truth == 1)) == 2
+    #TP = ((prediction == 1) + (ground_truth == 1)) == 2
+    #FN = ((prediction == 0) + (ground_truth == 1)) == 2
 
-    SE = float(torch.sum(TP)) / (float(torch.sum(TP + FN)) + 1e-6)
-
+    #SE = float(torch.sum(TP)) / (float(torch.sum(TP + FN)) + 1e-6)
+    ground_truth = ground_truth.flatten()
+    prediction = prediction.flatten()
+    mcm = confusion_matrix(ground_truth, prediction)
+    tn = mcm[1,1]
+    tp = mcm[0,0]
+    fn = mcm[1,0]
+    fp = mcm[0,1]
+    SE = tp / (tp + fn + 1e-6)
     return SE
 
 
-def specificity(ground_truth,prediction):
+def specificity_custom(ground_truth,prediction):
     ground_truth = ground_truth == torch.max(ground_truth)
 
     # TN : True Negative
     # FP : False Positive
-    TN = ((prediction == 0) + (ground_truth == 0)) == 2
-    FP = ((prediction == 1) + (ground_truth == 0)) == 2
+    #TN = ((prediction == 0) + (ground_truth == 0)) == 2
+    #FP = ((prediction == 1) + (ground_truth == 0)) == 2
 
-    SP = float(torch.sum(TN)) / (float(torch.sum(TN + FP)) + 1e-6)
-
+    #SP = float(torch.sum(TN)) / (float(torch.sum(TN + FP)) + 1e-6)
+    ground_truth = ground_truth.flatten()
+    prediction = prediction.flatten()
+    mcm = confusion_matrix(ground_truth, prediction)
+    tn = mcm[1,1]
+    tp = mcm[0,0]
+    fn = mcm[1,0]
+    fp = mcm[0,1]
+    SP = tn / (tn + fp + 1e-6)
     return SP
