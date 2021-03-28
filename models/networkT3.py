@@ -216,7 +216,7 @@ class make_ASPPModule(nn.Module):
                 m.bias.data.zero_()
 
 class ASPP(nn.Module):
-    def __init__(self, output_stride, BatchNorm, inplanes=2048):
+    def __init__(self, output_stride, BatchNorm, inplanes=2048, workplanes=256):
         # remove batchnorm
         # checkout striders
         """
@@ -237,19 +237,20 @@ class ASPP(nn.Module):
         elif output_stride == 8:
             dilations = [1, 12, 24, 36]
         else:
-            raise NotImplementedError
-
-        self.aspp1 = make_ASPPModule(inplanes, 256, 1, padding=0, dilation=dilations[0], BatchNorm=BatchNorm)
-        self.aspp2 = make_ASPPModule(inplanes, 256, 3, padding=dilations[1], dilation=dilations[1], BatchNorm=BatchNorm)
-        self.aspp3 = make_ASPPModule(inplanes, 256, 3, padding=dilations[2], dilation=dilations[2], BatchNorm=BatchNorm)
-        self.aspp4 = make_ASPPModule(inplanes, 256, 3, padding=dilations[3], dilation=dilations[3], BatchNorm=BatchNorm)
+            raise NotImplementedError        
+            
+        self.aspp1 = make_ASPPModule(inplanes, workplanes, 1, padding=0, dilation=dilations[0], BatchNorm=BatchNorm)
+        self.aspp2 = make_ASPPModule(inplanes, workplanes, 3, padding=dilations[1], dilation=dilations[1], BatchNorm=BatchNorm)
+        self.aspp3 = make_ASPPModule(inplanes, workplanes, 3, padding=dilations[2], dilation=dilations[2], BatchNorm=BatchNorm)
+        self.aspp4 = make_ASPPModule(inplanes, workplanes, 3, padding=dilations[3], dilation=dilations[3], BatchNorm=BatchNorm)
 
         self.global_avg_pool = nn.Sequential(nn.AdaptiveAvgPool2d((1, 1)),
-                                             nn.Conv2d(inplanes, 256, 1, stride=1, bias=False),
-                                             BatchNorm(256),
+                                             nn.Conv2d(inplanes, workplanes, 1, stride=1, bias=False),
+                                             BatchNorm(workplanes),
                                              nn.ReLU())
-        self.conv1 = nn.Conv2d(1280, 256, 1, bias=False)
-        self.bn1 = BatchNorm(256)
+        
+        self.conv1 = nn.Conv2d(workplanes*5, workplanes, 1, bias=False)
+        self.bn1 = BatchNorm(workplanes)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.5)
         self._init_weight()
@@ -285,7 +286,7 @@ class ASPP(nn.Module):
 # ###########
 
 class Decoder(nn.Module):
-    def __init__(self, num_classes, BatchNorm, low_level_inplanes = 256):
+    def __init__(self, num_classes, BatchNorm, low_level_inplanes = 256, workplanes=256):
         # remove batchnorm param
         # remove backbone param
         """
@@ -305,27 +306,31 @@ class Decoder(nn.Module):
         self.conv1 = nn.Conv2d(low_level_inplanes, 48, 1, bias=False)
         self.bn1 = BatchNorm(48)
         self.relu = nn.ReLU()
+        
+        self.upsample = nn.ConvTranspose2d(workplanes, workplanes, kernel_size=3, stride=4, padding=3)
         # 256 + 48
-        self.last_conv = nn.Sequential(nn.Conv2d(304, 256, kernel_size=3, stride=1, padding=1, bias=False),
+        self.last_conv = nn.Sequential(nn.Conv2d(workplanes+48, 256, kernel_size=3, stride=1, padding=1, bias=False),
                                        BatchNorm(256),
                                        nn.ReLU(),
                                        nn.Dropout(0.5),
-                                       nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
-                                       BatchNorm(256),
+                                       nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2),
+                                       nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False),
+                                       BatchNorm(128),
                                        nn.ReLU(),
                                        nn.Dropout(0.1),
-                                       nn.Conv2d(256, num_classes, kernel_size=1, stride=1))
+                                       nn.Conv2d(128, num_classes, kernel_size=1, stride=1))
         self._init_weight()
 
 
     def forward(self, x, low_level_feat):
-        # x from ASPP
-        # low_level_fea from encoder/backbone
-        low_level_feat = self.conv1(low_level_feat)
+        # x from ASPP (ch=256)
+        # low_level_fea from encoder/backbone (ch=256)
+        low_level_feat = self.conv1(low_level_feat) # 256->48
         low_level_feat = self.bn1(low_level_feat)
         low_level_feat = self.relu(low_level_feat)
-
-        x = F.interpolate(x, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
+        # dim: 34->129
+#         x = F.interpolate(x, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
+        x = self.upsample(x)
         x = torch.cat((x, low_level_feat), dim=1)
         x = self.last_conv(x)
 
@@ -357,13 +362,18 @@ class DeepLab(nn.Module):
             self.backbone = ResNet101(output_stride, BatchNorm)
         elif backbone == 'resnest':
             self.backbone = ResNeSt()
-        self.aspp = ASPP(output_stride, BatchNorm)
-        self.decoder = Decoder(num_classes, BatchNorm)
+            
+        # double dim
+        self.upsample = nn.ConvTranspose2d(2048, 2048, kernel_size=2, stride=2)
+            
+        self.aspp = ASPP(output_stride, BatchNorm, workplanes=256)
+        self.decoder = Decoder(num_classes, BatchNorm, workplanes=256)
 
         # self.freeze_bn = freeze_bn
 
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
+        x = self.upsample(x)
         x = self.aspp(x)
         x = self.decoder(x, low_level_feat)
         x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
@@ -424,11 +434,12 @@ if __name__ == "__main__":
 # model
 
 # +
+# changes
 # model
 
 # +
 # from torchsummary import summary
-# summary(model, input)
+# summary(model, input, device=torch.device('cuda:5'))
 # -
 
 
