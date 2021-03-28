@@ -303,13 +303,13 @@ class Decoder(nn.Module):
         # else:
         #     raise NotImplementedError
 
-        self.conv1 = nn.Conv2d(low_level_inplanes, 96, 1, bias=False)
-        self.bn1 = BatchNorm(96)
+        self.conv1 = nn.Conv2d(low_level_inplanes, 48, 1, bias=False)
+        self.bn1 = BatchNorm(48)
         self.relu = nn.ReLU()
         
-        self.upsample = nn.ConvTranspose2d(workplanes, workplanes, kernel_size=3, stride=4, padding=3)
+        self.upsample = nn.ConvTranspose2d(workplanes, workplanes, kernel_size=2, stride=2)
         # 256 + 48
-        self.last_conv = nn.Sequential(nn.Conv2d(workplanes+96, 256, kernel_size=3, stride=1, padding=1, bias=False),
+        self.last_conv = nn.Sequential(nn.Conv2d(workplanes+48, 256, kernel_size=3, stride=1, padding=1, bias=False),
                                        BatchNorm(256),
                                        nn.ReLU(),
                                        nn.Dropout(0.5),
@@ -317,7 +317,7 @@ class Decoder(nn.Module):
                                        nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False),
                                        BatchNorm(128),
                                        nn.ReLU(),
-                                       nn.Dropout(0.4), # increase
+                                       nn.Dropout(0.3), # increase
                                        nn.Conv2d(128, num_classes, kernel_size=1, stride=1))
         self._init_weight()
 

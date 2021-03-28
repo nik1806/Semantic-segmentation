@@ -139,26 +139,64 @@ def specificity_custom(ground_truth,prediction):
 
 
 # +
-def confusionmatrix_jaccard(ground_truth, prediction, num_classes:int =19):
-    ground_truth = ground_truth.flatten()
-    prediction = prediction.flatten()
-    mask = (ground_truth >= 0) & (ground_truth < num_classes)
-    confusion_matrix = torch.bincount(
-        num_classes * ground_truth[mask] + prediction[mask],
-        minlength=num_classes ** 2,).reshape(num_classes, num_classes).float()
-    return confusion_matrix
+def nanmean(x):
+    """Computes the arithmetic mean ignoring any NaNs."""
+    return torch.mean(x[x == x])
 
-# computes IoU based on confusion matrix
-def iou_jaccard_custom(confusion_matrix):
-    """Computes the Jaccard index <=> Intersection over Union (IoU).
+def _fast_hist(true, pred, num_classes):
+    mask = (true >= 0) & (true < num_classes)
+    hist = torch.bincount(
+        num_classes * true[mask] + pred[mask],
+        minlength=num_classes ** 2,
+    ).reshape(num_classes, num_classes).float()
+    return hist
+
+def jaccard_index(hist):
+    """Computes the Jaccard index, a.k.a the Intersection over Union (IoU).
     Args:
-        confusion_matrix: confusion matrix.
+        hist: confusion matrix.
     Returns:
-        avg_jacc: average per-class jaccard index.
+        avg_jacc: the average per-class jaccard index.
     """
-    intersection = torch.diag(confusion_matrix)
-    A = confusion_matrix.sum(dim=1)
-    B = confusion_matrix.sum(dim=0)
-    jaccard_coeff = intersection / (A + B - intersection + EPS)
-    jacc_avg = nanmean(jaccard)#taking mean discarding the nan values 
-    return jacc_avg, jaccard_coeff
+    A_inter_B = torch.diag(hist)
+    A = hist.sum(dim=1)
+    B = hist.sum(dim=0)
+    jaccard = A_inter_B / (A + B - A_inter_B + 1e-6)
+    avg_jacc = nanmean(jaccard)
+    return avg_jacc
+
+def iou_custom(ground_truth, prediction, n_classes:int=19):
+    conf_mat = _fast_hist(ground_truth, prediction, n_classes)
+    return jaccard_index(conf_mat)
+
+
+# def iou_custom(ground_truth, prediction, n_classes:int=19):
+#     """
+#         Return mean IOU score.
+#     Args:   
+#         ground_truth: HxW ndarray; each element contains class label from (0-20)
+#         prediction: HxW ndarray; each element contains predicted class label
+#         n_class: total number of classes; used to average score
+#     """
+#     # init, sum over all individual class scores
+#     score = 0.
+#     # iterate for each class
+#     for c in range(n_classes):
+#         # create 2D matrix (mask) (binary elements 0-1) for ground truth and prediction matrix
+#         gnd = torch.zeros_like(ground_truth)
+#         pred = torch.zeros_like(prediction)
+#         gnd[ground_truth == c] = 1
+#         pred[prediction == c] = 1
+    
+#         # compute score
+#         # gnd = gnd.astype(np.bool)
+#         # pred = pred.astype(np.bool)
+#         conf_mat = confusionmatrix_jaccard(gnd, pred, n_classes)
+#         score += iou_jaccard_binary(conf_mat)
+
+#     # average n=21
+#     # return
+#     return score/n_classes
+
+
+
