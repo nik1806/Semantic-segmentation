@@ -213,7 +213,8 @@ class R2UNet(nn.Module):
 
         self.up5 = UpConv(n_filter[4], n_filter[3], deconv=True)
         self.r2up5 = R2UNetBlock(n_filter[4], n_filter[3], t)
-        self.dropout5 = nn.Dropout(p=0.3)
+        self.dropout5 = nn.Dropout(p=0.4)
+        
         self.up4 = UpConv(n_filter[3], n_filter[2], deconv=True)
         self.r2up4 = R2UNetBlock(n_filter[3], n_filter[2], t)
         self.dropout4 = nn.Dropout(p=0.3)

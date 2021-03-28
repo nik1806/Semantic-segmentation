@@ -136,3 +136,29 @@ def specificity_custom(ground_truth,prediction):
     fp = mcm[0,1]
     SP = tn / (tn + fp + 1e-6)
     return SP
+
+
+# +
+def confusionmatrix_jaccard(ground_truth, prediction, num_classes:int =19):
+    ground_truth = ground_truth.flatten()
+    prediction = prediction.flatten()
+    mask = (ground_truth >= 0) & (ground_truth < num_classes)
+    confusion_matrix = torch.bincount(
+        num_classes * ground_truth[mask] + prediction[mask],
+        minlength=num_classes ** 2,).reshape(num_classes, num_classes).float()
+    return confusion_matrix
+
+# computes IoU based on confusion matrix
+def iou_jaccard_custom(confusion_matrix):
+    """Computes the Jaccard index <=> Intersection over Union (IoU).
+    Args:
+        confusion_matrix: confusion matrix.
+    Returns:
+        avg_jacc: average per-class jaccard index.
+    """
+    intersection = torch.diag(confusion_matrix)
+    A = confusion_matrix.sum(dim=1)
+    B = confusion_matrix.sum(dim=0)
+    jaccard_coeff = intersection / (A + B - intersection + EPS)
+    jacc_avg = nanmean(jaccard)#taking mean discarding the nan values 
+    return jacc_avg, jaccard_coeff
