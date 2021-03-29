@@ -167,7 +167,7 @@ def jaccard_index(hist):
 
 def iou_custom(ground_truth, prediction, n_classes:int=19):
     conf_mat = _fast_hist(ground_truth, prediction, n_classes)
-    return jaccard_index(conf_mat)
+    return jaccard_index(conf_mat).numpy()
 
 
 # def iou_custom(ground_truth, prediction, n_classes:int=19):
