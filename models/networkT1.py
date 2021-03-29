@@ -84,6 +84,7 @@ class upBlock(nn.Module):
         self.upsample = nn.ConvTranspose2d(up_conv_in_ch, up_conv_out_ch, kernel_size=2, stride=2)
         self.conv_blk_1 = convBN(in_ch, out_ch)
         self.conv_blk_2 = convBN(out_ch, out_ch)
+        self.dropout = nn.Dropout(0.3)
 
     def forward(self, prev_x, down_x):
         """
@@ -96,7 +97,7 @@ class upBlock(nn.Module):
         x = torch.cat([x, down_x], 1) # concatenate across channels
         x = self.conv_blk_1(x)
         x = self.conv_blk_2(x)
-        return x
+        return self.dropout(x)
 
 
 class UNet(nn.Module):
