@@ -1,6 +1,7 @@
+# dependencies
 import torch
 from torch import nn
-# from torchsummary import summary
+from torchsummary import summary
 import torchvision
 from torchvision.models.resnet import resnet50
 
@@ -23,32 +24,13 @@ class convBN(nn.Module):
         super().__init__()
         self.conv = nn.Conv2d(in_ch, out_ch, padding=padding, kernel_size=ks, stride=stride)
         self.bn = nn.BatchNorm2d(out_ch)
-        # self.relu = nn.ReLU()
         self.selu = nn.SELU()
-        # self.with_nonlinearity = with_nonlinearity
 
     def forward(self, x):
         x = self.conv(x)
         x = self.bn(x)
-        # if self.with_nonlinearity:
         x = self.selu(x)
         return x
-
-
-# class Bridge(nn.Module):
-#     """
-#     This is the middle layer of the UNet which just consists of some
-#     """
-
-#     def __init__(self, in_ch, out_ch):
-#         super().__init__()
-#         self.bridge = nn.Sequential(
-#             convBN(in_ch, out_ch),
-#             convBN(out_ch, out_ch)
-#         )
-
-#     def forward(self, x):
-#         return self.bridge(x)
 
 
 class upBlock(nn.Module):
@@ -72,14 +54,6 @@ class upBlock(nn.Module):
             up_conv_in_ch = in_ch
         if up_conv_out_ch == None:
             up_conv_out_ch = out_ch
-
-        # if upsampling_method == "conv_transpose":
-        #     self.upsample = nn.ConvTranspose2d(up_conv_in_ch, up_conv_out_ch, kernel_size=2, stride=2)
-        # elif upsampling_method == "bilinear":
-        #     self.upsample = nn.Sequential(
-        #         nn.Upsample(mode='bilinear', scale_factor=2),
-        #         nn.Conv2d(in_ch, out_ch, kernel_size=1, stride=1)
-        #     )
 
         self.upsample = nn.ConvTranspose2d(up_conv_in_ch, up_conv_out_ch, kernel_size=2, stride=2)
         self.conv_blk_1 = convBN(in_ch, out_ch)
@@ -119,14 +93,13 @@ class UNet(nn.Module):
         down_blocks = []
         up_blocks = []
 
-        # DOWNBLOCKS -> increase channels
+        # DOWNBLOCKS -> increase channels, reduces height & width
         self.input_block = nn.Sequential(*list(resnet.children()))[:3] # use later in decoder
         self.input_pool = list(resnet.children())[3]
         for bottleneck in list(resnet.children()): # using bottleneck layers
             if isinstance(bottleneck, nn.Sequential):
                 down_blocks.append(bottleneck)
         self.down_blocks = nn.ModuleList(down_blocks)
-        # self.bridge = Bridge(2048, 2048)
         
         # Additional
         self.bridge = self.bridge = nn.Sequential(
@@ -134,7 +107,7 @@ class UNet(nn.Module):
             convBN(2048, 2048)
         )
 
-        # UPBLOCKS -> reduce channels
+        # UPBLOCKS -> reduce channels, increase height & width
         up_blocks.append(upBlock(2048, 1024))
         up_blocks.append(upBlock(1024, 512))
         up_blocks.append(upBlock(512, 256))
@@ -164,35 +137,16 @@ class UNet(nn.Module):
             key = f"layer_{self.DEPTH - 1 - i}"
             x = block(x, pre_pools[key])
 
-        # output_feature_map = x
         x = self.out(x)
         del pre_pools # clear garbage
 
-        # if with_output_feature_map:
-        #     return x, output_feature_map
-        # else:
         return x
 
-# +
-# print("INIT")
-# model = UNet(n_cls=21).cuda()
-# inp = torch.rand((1, 3, 128, 128)).cuda()
-# print("To gpu complete")
-# # out = model(inp)
-# # visualization of model
-# summary(model, inp)
-# # print(out.shape)
 
-# +
-# device = torch.device('cuda:5')
-
-# +
-# model = UNetWithResnet50Encoder().cuda(device)
-# inp = torch.rand((1, 3, 256, 256)).cuda(device)
-# out = model(inp)
-# -
-
-# visualization of model
-# summary(model, inp, verbose=1)
-# print(out.shape)
-
+if __name__ == "__main__":
+    model = UNet()
+    model.eval()
+    input = torch.rand(1, 3, 256, 256)
+    output = model(input)
+    print(output.size())
+    summary(model, input)
