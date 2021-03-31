@@ -24,15 +24,11 @@ def dice_coefficient_custom(ground_truth, prediction, n_classes:int =21, smooth:
         pred[prediction == c] = 1
     
         # compute score
-        # gnd = gnd.astype(np.bool)
-        # pred = pred.astype(np.bool)
         gnd_f = gnd.flatten() # flatten to 1D
         pred_f = pred.flatten()
         intersection = (gnd_f * pred_f).sum()
         score += ((2.* intersection + smooth)/(gnd_f.sum() + pred_f.sum() + smooth))
 
-    # average n=21
-    # return
     return score/n_classes
 
 
@@ -67,8 +63,6 @@ def roc_auc_custom(ground_truth, prediction, n_classes:int =21, average:str = 'm
         except ValueError: 
             pass
 
-    # average n=21
-    # return
     if cnt == 0: # no score
         return score
     else: # average
@@ -76,9 +70,6 @@ def roc_auc_custom(ground_truth, prediction, n_classes:int =21, average:str = 'm
 
 def accuracy_se_sp_custom(ground_truth,prediction):
     ground_truth = ground_truth == torch.max(ground_truth)
-    #corr = torch.sum(prediction == ground_truth)
-    #tensor_size = prediction.size(0) * prediction.size(1) * prediction.size(2) * prediction.size(3)
-    #acc = float(corr) / float(tensor_size)
     ground_truth = ground_truth.flatten()
     prediction = prediction.flatten()
     mcm = confusion_matrix(ground_truth, prediction)
@@ -100,10 +91,6 @@ def sensitivity_custom(ground_truth, prediction):
 
     # TP : True Positive
     # FN : False Negative
-    #TP = ((prediction == 1) + (ground_truth == 1)) == 2
-    #FN = ((prediction == 0) + (ground_truth == 1)) == 2
-
-    #SE = float(torch.sum(TP)) / (float(torch.sum(TP + FN)) + 1e-6)
     ground_truth = ground_truth.flatten()
     prediction = prediction.flatten()
     mcm = confusion_matrix(ground_truth, prediction)
@@ -120,10 +107,6 @@ def specificity_custom(ground_truth,prediction):
 
     # TN : True Negative
     # FP : False Positive
-    #TN = ((prediction == 0) + (ground_truth == 0)) == 2
-    #FP = ((prediction == 1) + (ground_truth == 0)) == 2
-
-    #SP = float(torch.sum(TN)) / (float(torch.sum(TN + FP)) + 1e-6)
     ground_truth = ground_truth.flatten()
     prediction = prediction.flatten()
     mcm = confusion_matrix(ground_truth, prediction)
@@ -135,31 +118,25 @@ def specificity_custom(ground_truth,prediction):
     return SP
 
 
-# +
-def nanmean(x):
-    """Computes the arithmetic mean ignoring any NaNs."""
-    return torch.mean(x[x == x])
+def _fast_hist(true, pred, num_cls):
+    mask = (true >= 0) & (true < num_cls)
+    # frequency of each value
+    conf_mat = torch.bincount( num_cls * true[mask] + pred[mask], minlength=num_cls ** 2,).reshape(num_cls, num_cls).float()
+    return conf_mat
 
-def _fast_hist(true, pred, num_classes):
-    mask = (true >= 0) & (true < num_classes)
-    hist = torch.bincount(
-        num_classes * true[mask] + pred[mask],
-        minlength=num_classes ** 2,
-    ).reshape(num_classes, num_classes).float()
-    return hist
-
-def jaccard_index(hist):
+def jaccard_index(conf_mat):
     """Computes the Jaccard index, a.k.a the Intersection over Union (IoU).
     Args:
-        hist: confusion matrix.
+        conf_mat: confusion matrix.
     Returns:
         avg_jacc: the average per-class jaccard index.
     """
-    A_inter_B = torch.diag(hist)
-    A = hist.sum(dim=1)
-    B = hist.sum(dim=0)
-    jaccard = A_inter_B / (A + B - A_inter_B + 1e-6)
-    avg_jacc = nanmean(jaccard)
+    X_Y_inter = torch.diag(conf_mat)
+    X = conf_mat.sum(dim=1)
+    Y = conf_mat.sum(dim=0)
+    jaccard = X_Y_inter / (X + Y - X_Y_inter + 1e-6)
+    # Ignoring NaNs and calc arithmetic mean
+    avg_jacc = torch.mean(jaccard[jaccard == jaccard])
     return avg_jacc
 
 def iou_custom(ground_truth, prediction, n_classes:int=19):
@@ -167,8 +144,6 @@ def iou_custom(ground_truth, prediction, n_classes:int=19):
     return jaccard_index(conf_mat).numpy()
 
 
-
-# +
 #6 evaluation matrices to be used: sensitivity, specificity, accuracy, AUC, DC and IOU
 
 def evaluate_batch(gnd_b, pred_b, cls:int = 19):

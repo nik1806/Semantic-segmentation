@@ -3,9 +3,7 @@ import numpy as np
 import scipy.misc as m
 from PIL import Image
 from torch.utils import data
-# from mypath import Path
 from torchvision import transforms
-# from dataloaders import custom_transforms as tr
 from datasets import custom_transforms as tr
 
 class CityscapesSegmentation(data.Dataset):
@@ -25,7 +23,7 @@ class CityscapesSegmentation(data.Dataset):
 
         self.files[split] = self.recursive_glob(rootdir=self.images_base, suffix='.png')
 
-        self.void_classes = [0, 1, 2, 3, 4, 5, 6, 9, 10, 14, 15, 16, 18, 29, 30, -1]
+        self.void_classes = [0, 1, 2, 3, 4, 5, 6, 9, 10, 14, 15, 16, 18, 29, 30, -1] # classes will be ignored
         self.valid_classes = [7, 8, 11, 12, 13, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 31, 32, 33]
         self.class_names = ['unlabelled', 'road', 'sidewalk', 'building', 'wall', 'fence', \
                             'pole', 'traffic_light', 'traffic_sign', 'vegetation', 'terrain', \
@@ -61,8 +59,6 @@ class CityscapesSegmentation(data.Dataset):
             return self.transform_tr(sample)
         elif self.split == 'val':
             return self.transform_val(sample)
-        elif self.split == 'test':
-            return self.transform_ts(sample)
 
     def encode_segmap(self, mask):
         # Put all void classes to zero
@@ -100,51 +96,3 @@ class CityscapesSegmentation(data.Dataset):
             tr.ToTensor()])
 
         return composed_transforms(sample)
-
-    def transform_ts(self, sample):
-
-        composed_transforms = transforms.Compose([
-            tr.FixedResize(size=self.crop_size),
-            tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-            tr.ToTensor()])
-
-        return composed_transforms(sample)
-
-if __name__ == '__main__':
-    from dataloaders.utils import decode_segmap # create a utils in dataset directory
-    from torch.utils.data import DataLoader
-    import matplotlib.pyplot as plt
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    args = parser.parse_args()
-    args.base_size = 513
-    args.crop_size = 513
-
-    cityscapes_train = CityscapesSegmentation(args, split='train')
-
-    dataloader = DataLoader(cityscapes_train, batch_size=2, shuffle=True, num_workers=2)
-
-    for ii, sample in enumerate(dataloader):
-        for jj in range(sample["image"].size()[0]):
-            img = sample['image'].numpy()
-            gt = sample['label'].numpy()
-            tmp = np.array(gt[jj]).astype(np.uint8)
-            segmap = decode_segmap(tmp, dataset='cityscapes')
-            img_tmp = np.transpose(img[jj], axes=[1, 2, 0])
-            img_tmp *= (0.229, 0.224, 0.225)
-            img_tmp += (0.485, 0.456, 0.406)
-            img_tmp *= 255.0
-            img_tmp = img_tmp.astype(np.uint8)
-            plt.figure()
-            plt.title('display')
-            plt.subplot(211)
-            plt.imshow(img_tmp)
-            plt.subplot(212)
-            plt.imshow(segmap)
-
-        if ii == 1:
-            break
-
-    plt.show(block=True)
-

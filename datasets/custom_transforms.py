@@ -156,6 +156,7 @@ def pair_transform_val(image, target, max_cls=34):
 from PIL import Image, ImageOps, ImageFilter
 
 class RandomRotateB(object):
+    """Perform random rotation from -angle to +angle on image and segmap both"""
     def __call__(self, sample, angle=10):
         img = sample['image']
         mask = sample['label']
@@ -163,8 +164,6 @@ class RandomRotateB(object):
             curr_angle = random.randint(-angle, angle) # angle between -10 to 10 degree
             img = TF.rotate(img, curr_angle)
             mask = TF.rotate(mask, curr_angle)
-#             img = img.transpose(Image.FLIP_LEFT_RIGHT)
-#             mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
 
         return {'image': img,
                 'label': mask}
@@ -192,7 +191,6 @@ class Normalize(object):
         return {'image': img,
                 'label': mask}
 
-
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
@@ -211,7 +209,6 @@ class ToTensor(object):
         return {'image': img,
                 'label': mask}
 
-
 class RandomHorizontalFlip(object):
     def __call__(self, sample):
         img = sample['image']
@@ -223,23 +220,8 @@ class RandomHorizontalFlip(object):
         return {'image': img,
                 'label': mask}
 
-
-class RandomRotate(object):
-    def __init__(self, degree):
-        self.degree = degree
-
-    def __call__(self, sample):
-        img = sample['image']
-        mask = sample['label']
-        rotate_degree = random.uniform(-1*self.degree, self.degree)
-        img = img.rotate(rotate_degree, Image.BILINEAR)
-        mask = mask.rotate(rotate_degree, Image.NEAREST)
-
-        return {'image': img,
-                'label': mask}
-
-
 class RandomGaussianBlur(object):
+    """Perform gaussian blur randomly on image and segmap both"""
     def __call__(self, sample):
         img = sample['image']
         mask = sample['label']
@@ -287,6 +269,21 @@ class RandomScaleCrop(object):
         return {'image': img,
                 'label': mask}
 
+class FixedResize(object):
+    def __init__(self, size):
+        self.size = (size, size)  # size: (h, w)
+
+    def __call__(self, sample):
+        img = sample['image']
+        mask = sample['label']
+
+        assert img.size == mask.size
+
+        img = img.resize(self.size, Image.BILINEAR)
+        mask = mask.resize(self.size, Image.NEAREST)
+
+        return {'image': img,
+                'label': mask}
 
 class FixScaleCrop(object):
     def __init__(self, crop_size):
@@ -310,22 +307,6 @@ class FixScaleCrop(object):
         y1 = int(round((h - self.crop_size) / 2.))
         img = img.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
         mask = mask.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
-
-        return {'image': img,
-                'label': mask}
-
-class FixedResize(object):
-    def __init__(self, size):
-        self.size = (size, size)  # size: (h, w)
-
-    def __call__(self, sample):
-        img = sample['image']
-        mask = sample['label']
-
-        assert img.size == mask.size
-
-        img = img.resize(self.size, Image.BILINEAR)
-        mask = mask.resize(self.size, Image.NEAREST)
 
         return {'image': img,
                 'label': mask}
