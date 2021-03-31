@@ -4,13 +4,13 @@ import matplotlib.pyplot as plt
 from datasets.custom_transforms import unNormalize, decode_segmap
 
 
-def visualize(model, train_loader, save_path:str, device, cls_num:int=19, disp_num:int=10):
+def visualize(model, data_loader, save_path:str, device, cls_num:int=19, disp_num:int=10):
     """
         It display pairs of the original image,the ground truth mask and prediction mask (from model).
         For mask each label is color coded for display for better intutive understanding.
     Args:
         model: neural network model to be train
-        train_loader: data loader for train set
+        data_loader: data loader for visualization
         save_path: path to save the plot
         device: device to which tensors will be allocated (in our case, from gpu 0 to 7)
         cls_num: number of classes in dataset, parameter for decode_segmap
@@ -20,8 +20,8 @@ def visualize(model, train_loader, save_path:str, device, cls_num:int=19, disp_n
     """
     # model in evaluation model -> batchnorm, dropout etc. adjusted accordingly
     model.eval()
-    # iterator on training data
-    data = iter(train_loader)
+    # iterator on data
+    data = iter(data_loader)
     # init figure object
     fig = plt.figure(figsize=(10,40))
     pred_rgb = list()

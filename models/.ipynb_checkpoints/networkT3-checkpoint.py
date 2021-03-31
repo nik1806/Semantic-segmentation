@@ -6,7 +6,13 @@ import torch.utils.model_zoo as model_zoo
 
 
 class ResNeSt(nn.Module):
-    def __init__(self, arch='resnest101', pretrained=True):
+    def __init__(self, arch:str='resnest101', pretrained=True):
+        """
+        Args:
+            arch: define architecture for ResNeSt, more specifically depth/layers of network
+            pretrained: if True,we will use pretrained weights
+        """
+        
         super().__init__()
         torch.hub.list('zhanghang1989/ResNeSt', force_reload=True)
         # load pretrained ResNeSt-101 models
@@ -67,7 +73,7 @@ class ASPP(nn.Module):
         """
         super(ASPP, self).__init__()
 
-        dilations = [1, 6, 12, 18] # stride=16 
+        dilations = [1, 6, 12, 18] # dilation rates 
             
         self.aspp1 = ASPPModule(inplanes, workplanes, 1, padding=0, dilation=dilations[0])
         self.aspp2 = ASPPModule(inplanes, workplanes, 3, padding=dilations[1], dilation=dilations[1])
