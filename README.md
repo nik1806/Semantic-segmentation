@@ -6,8 +6,6 @@ Each task is present in 'Vision_task_i.ipynb' notebook (i corresponds to task nu
 
 The Dockerfile provided can be use for demo run.
 
-The trained weights are included in 'weights' directory, within particular sub-directory for each task.
+You can find the complete report on the project [here](https://drive.google.com/file/d/1wFySH81u2YoUsax6J82yCrSXGHbMS-c1/view?usp=sharing)
 
 Please revert back if any problem occurs.
-
-Thank you very much for your support throughout the project!
